@@ -1,0 +1,15 @@
+{
+  "type": "tacz_magic_bullet:gun_spell_inscribe",
+  "category": "misc",
+  "ingredients": [
+    {
+      "tag": "tacz:guns"
+    },
+    {
+      "item": "irons_spellbooks:scroll"
+    }
+  ],
+  "result": {
+    "item": "minecraft:air"
+  }
+}
