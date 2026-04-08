@@ -7,8 +7,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -33,14 +31,24 @@ public class GunTooltipHandler {
             AbstractSpell spell = SpellRegistry.getSpell(spellId);
             if (spell != null && spell != SpellRegistry.none()) {
                 List<Component> tooltip = event.getToolTip();
+
                 tooltip.add(Component.literal(""));
-                tooltip.add(Component.literal("§7┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"));
-                tooltip.add(Component.literal("§d§l✦ 刻印された魔法 ✦"));
-                tooltip.add(Component.literal("§7 呪文: §b" + spell.getSpellName()));
-                tooltip.add(Component.literal("§7 レベル: §a" + level));
-                tooltip.add(Component.literal("§7┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"));
+                tooltip.add(Component.literal("§7┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"));
+
+                tooltip.add(Component.translatable("tooltip.tacz_magic_bullet.inscribed_title")
+                        .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD));
+
+                // 修正箇所: getDisplayName にツールチップの持ち主（Player）を渡す
+                tooltip.add(Component.translatable("tooltip.tacz_magic_bullet.spell_name")
+                        .append(Component.literal(": "))
+                        .append(spell.getDisplayName(event.getEntity()).withStyle(ChatFormatting.AQUA)));
+
+                tooltip.add(Component.translatable("tooltip.tacz_magic_bullet.spell_level")
+                        .append(Component.literal(": "))
+                        .append(Component.literal(String.valueOf(level)).withStyle(ChatFormatting.GREEN)));
+
+                tooltip.add(Component.literal("§7┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"));
             }
         }
     }
 }
-

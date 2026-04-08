@@ -1,4 +1,7 @@
 {
   "key.tacz_magic_bullet.toggle": "Toggle Magic Bullet Mode",
-  "category.tacz_magic_bullet": "TACZ Magic Bullet"
+  "category.tacz_magic_bullet": "TACZ Magic Bullet",
+  "tooltip.tacz_magic_bullet.inscribed_title": "✦ Inscribed Magic ✦",
+  "tooltip.tacz_magic_bullet.spell_name": "§7 Spell",
+  "tooltip.tacz_magic_bullet.spell_level": "§7 Level"
 }

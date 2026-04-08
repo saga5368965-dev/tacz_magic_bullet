@@ -27,8 +27,6 @@ public class Tacz_magic_bullet {
 
     public static final String MODID = "tacz_magic_bullet";
     public static final Logger LOGGER = LogUtils.getLogger();
-
-    // レジストリ設定
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
@@ -36,25 +34,17 @@ public class Tacz_magic_bullet {
     // レシピシリアライザーの登録
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
             DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, MODID);
-
-    // カスタムレシピの登録（ラムダ式を使用）
     public static final RegistryObject<RecipeSerializer<GunSpellInscribeRecipe>> GUN_SPELL_INSCRIBE =
             RECIPE_SERIALIZERS.register("gun_spell_inscribe",
                     () -> new SimpleCraftingRecipeSerializer<>((id, category) -> new GunSpellInscribeRecipe(id, category)));
 
     public Tacz_magic_bullet() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-
-        // 共通セットアップの登録
         modEventBus.addListener(this::commonSetup);
-
-        // 各レジストリの登録
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         RECIPE_SERIALIZERS.register(modEventBus);
-
-        // MagicBulletEvents を明示的に登録
         MinecraftForge.EVENT_BUS.register(MagicBulletEvents.class);
         LOGGER.info("Registered MagicBulletEvents to Forge event bus");
         modEventBus.addListener(this::addCreative);

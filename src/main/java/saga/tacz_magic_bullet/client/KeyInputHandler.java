@@ -11,11 +11,10 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = Tacz_magic_bullet.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class KeyInputHandler {
-    // 魔法弾のON/OFFを切り替えるキー
     public static final KeyMapping MAGIC_BULLET_TOGGLE = new KeyMapping(
             "key.tacz_magic_bullet.toggle",
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_M, // デフォルトはMキー
+            GLFW.GLFW_KEY_M,
             "category.tacz_magic_bullet"
     );
 
