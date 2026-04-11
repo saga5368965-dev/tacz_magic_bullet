@@ -1,5 +1,6 @@
 package saga.tacz_magic_bullet;
 
+import ca.weblite.objc.Proxy;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTab;
@@ -16,11 +17,9 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 import saga.tacz_magic_bullet.Event.MagicBulletEvents;
 import saga.tacz_magic_bullet.network.PacketHandler;
-import saga.tacz_magic_bullet.recipe.GunSpellInscribeRecipe;
 
 @Mod(Tacz_magic_bullet.MODID)
 public class Tacz_magic_bullet {
@@ -34,9 +33,6 @@ public class Tacz_magic_bullet {
     // レシピシリアライザーの登録
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
             DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, MODID);
-    public static final RegistryObject<RecipeSerializer<GunSpellInscribeRecipe>> GUN_SPELL_INSCRIBE =
-            RECIPE_SERIALIZERS.register("gun_spell_inscribe",
-                    () -> new SimpleCraftingRecipeSerializer<>((id, category) -> new GunSpellInscribeRecipe(id, category)));
 
     public Tacz_magic_bullet() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();

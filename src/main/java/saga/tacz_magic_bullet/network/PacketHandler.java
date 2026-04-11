@@ -8,6 +8,7 @@ import saga.tacz_magic_bullet.Tacz_magic_bullet;
 public class PacketHandler {
     private static final String PROTOCOL_VERSION = "1";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
+
             new ResourceLocation(Tacz_magic_bullet.MODID, "main"),
             () -> PROTOCOL_VERSION,
             PROTOCOL_VERSION::equals,

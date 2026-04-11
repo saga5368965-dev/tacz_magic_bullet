@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "saga.tacz_magic_bullet.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "tacz_magic_bullet.refmap.json",
+  "mixins": [
+    "ArcaneAnvilMenuMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
