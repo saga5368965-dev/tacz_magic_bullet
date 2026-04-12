@@ -4,6 +4,7 @@ import com.tacz.guns.api.event.common.GunFireEvent;
 import com.tacz.guns.api.event.common.EntityHurtByGunEvent;
 import com.tacz.guns.api.event.server.AmmoHitBlockEvent;
 import com.tacz.guns.entity.EntityKineticBullet;
+import io.redspace.ironsspellbooks.api.events.ModifySpellLevelEvent;
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
@@ -25,6 +26,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -67,6 +69,11 @@ public class MagicBulletEvents {
         }
 
         if (spell == null || spell == SpellRegistry.none()) return;
+
+        // 【ここから修正：イベントを強制発火させて邪眼などのブーストを反映させる】
+        ModifySpellLevelEvent levelEvent = new ModifySpellLevelEvent(spell, player, level, level);
+        MinecraftForge.EVENT_BUS.post(levelEvent);
+        level = levelEvent.getLevel();
 
         MagicData magicData = MagicData.getPlayerMagicData(player);
         String spellId = spell.getSpellResource().toString();

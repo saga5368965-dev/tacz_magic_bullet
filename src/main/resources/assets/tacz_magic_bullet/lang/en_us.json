@@ -3,5 +3,8 @@
   "category.tacz_magic_bullet": "TACZ Magic Bullet",
   "tooltip.tacz_magic_bullet.inscribed_title": "✦ Inscribed Magic ✦",
   "tooltip.tacz_magic_bullet.spell_name": "§7 Spell",
-  "tooltip.tacz_magic_bullet.spell_level": "§7 Level"
+  "tooltip.tacz_magic_bullet.spell_level": "§7 Level",
+  "msg.tacz_magic_bullet.mode.on": "§b[Magic Bullet] ON",
+  "msg.tacz_magic_bullet.mode.off": "§7[Magic Bullet] OFF",
+  "key.tacz_magic_bullet.category": "Magic Bullet"
 }

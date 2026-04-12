@@ -3,5 +3,8 @@
   "category.tacz_magic_bullet": "TACZ 魔法弾",
   "tooltip.tacz_magic_bullet.inscribed_title": "✦ 刻印された魔法 ✦",
   "tooltip.tacz_magic_bullet.spell_name": "§7 呪文",
-  "tooltip.tacz_magic_bullet.spell_level": "§7 レベル"
+  "tooltip.tacz_magic_bullet.spell_level": "§7 レベル",
+  "msg.tacz_magic_bullet.mode.on": "§b[Magic Bullet] 有効",
+  "msg.tacz_magic_bullet.mode.off": "§7[Magic Bullet] 無効",
+  "key.tacz_magic_bullet.category": "Magic Bullet"
 }

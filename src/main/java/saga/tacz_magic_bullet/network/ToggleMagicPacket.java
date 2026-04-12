@@ -16,14 +16,13 @@ public class ToggleMagicPacket {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player != null) {
-                // NBTに状態を反転させて保存
                 boolean currentState = player.getPersistentData().getBoolean("MagicBulletEnabled");
                 boolean newState = !currentState;
                 player.getPersistentData().putBoolean("MagicBulletEnabled", newState);
 
-                // プレイヤーに通知
-                String message = newState ? "§b[Magic Bullet] ON" : "§7[Magic Bullet] OFF";
-                player.displayClientMessage(Component.literal(message), true);
+                // langファイルから翻訳を呼び出す
+                String key = newState ? "msg.tacz_magic_bullet.mode.on" : "msg.tacz_magic_bullet.mode.off";
+                player.displayClientMessage(Component.translatable(key), true);
             }
         });
         ctx.get().setPacketHandled(true);
