@@ -52,50 +52,85 @@ public class MagicBulletEvents {
         ItemStack gunStack = event.getGunItemStack();
         CompoundTag rootTag = gunStack.getTag();
 
-        AbstractSpell spell = null;
-        int level = 1;
+        java.util.List<net.minecraft.nbt.CompoundTag> spellsToUse = new java.util.ArrayList<>();
 
-        if (rootTag != null && rootTag.contains("InscribedSpell")) {
+        if (rootTag != null && rootTag.contains("InscribedSpells")) {
+            net.minecraft.nbt.ListTag spellsList = rootTag.getList("InscribedSpells", 10);
+            if (!spellsList.isEmpty()) {
+                for (int i = 0; i < spellsList.size(); i++) {
+                    spellsToUse.add(spellsList.getCompound(i));
+                }
+            }
+        } else if (rootTag != null && rootTag.contains("InscribedSpell")) {
             CompoundTag inscribedSpell = rootTag.getCompound("InscribedSpell");
-            spell = SpellRegistry.getSpell(inscribedSpell.getString("SpellID"));
-            level = inscribedSpell.getInt("Level");
+            spellsToUse.add(inscribedSpell);
         } else if (ISpellContainer.isSpellContainer(gunStack)) {
             ISpellContainer container = ISpellContainer.get(gunStack);
             if (!container.isEmpty()) {
                 SpellData spellData = container.getSpellAtIndex(0);
-                spell = spellData.getSpell();
-                level = spellData.getLevel();
+                CompoundTag tag = new CompoundTag();
+                tag.putString("SpellID", spellData.getSpell().getSpellId());
+                tag.putInt("Level", spellData.getLevel());
+                spellsToUse.add(tag);
             }
         }
 
-        if (spell == null || spell == SpellRegistry.none()) return;
-
-        // 【ここから修正：イベントを強制発火させて邪眼などのブーストを反映させる】
-        ModifySpellLevelEvent levelEvent = new ModifySpellLevelEvent(spell, player, level, level);
-        MinecraftForge.EVENT_BUS.post(levelEvent);
-        level = levelEvent.getLevel();
+        if (spellsToUse.isEmpty()) return;
 
         MagicData magicData = MagicData.getPlayerMagicData(player);
-        String spellId = spell.getSpellResource().toString();
-        boolean isRecasting = magicData.getPlayerRecasts().hasRecastForSpell(spellId);
         boolean hasCalamityRing = checkForCalamityRing(player);
 
-        if (!player.isCreative() && !hasCalamityRing && !isRecasting) {
-            float manaCost = spell.getManaCost(level);
-            if (magicData.getMana() < manaCost) {
+        // マナコスト合計を計算（修正後レベルで計算するために一時的にレベル調整）
+        float totalManaCost = 0;
+        for (CompoundTag spellTag : spellsToUse) {
+            AbstractSpell spell = SpellRegistry.getSpell(spellTag.getString("SpellID"));
+            if (spell != null && spell != SpellRegistry.none()) {
+                int level = spellTag.getInt("Level");
+
+                // ModifySpellLevelEvent を発火してレベル調整（邪眼などがブーストを適用）
+                ModifySpellLevelEvent levelEvent = new ModifySpellLevelEvent(spell, player, level, level);
+                MinecraftForge.EVENT_BUS.post(levelEvent);
+                int adjustedLevel = levelEvent.getLevel();
+
+                totalManaCost += spell.getManaCost(adjustedLevel);
+            }
+        }
+
+        if (!player.isCreative() && !hasCalamityRing) {
+            if (magicData.getMana() < totalManaCost) {
                 event.setCanceled(true);
                 return;
             }
-            magicData.setMana(magicData.getMana() - manaCost);
+            magicData.setMana(magicData.getMana() - totalManaCost);
             if (player instanceof ServerPlayer serverPlayer) {
                 Messages.sendToPlayer(new SyncManaPacket(magicData), serverPlayer);
             }
         }
 
-        CompoundTag dataToPass = new CompoundTag();
-        dataToPass.putString("SpellID", spell.getSpellId());
-        dataToPass.putInt("Level", level);
-        pendingSpells.put(player.getUUID(), dataToPass);
+        // 最終的な呪文データを保存（レベルは既に調整済み）
+        net.minecraft.nbt.ListTag pendingList = new net.minecraft.nbt.ListTag();
+        for (CompoundTag spellTag : spellsToUse) {
+            AbstractSpell spell = SpellRegistry.getSpell(spellTag.getString("SpellID"));
+            if (spell != null && spell != SpellRegistry.none()) {
+                int level = spellTag.getInt("Level");
+
+                // 邪眼などのレベル調整イベントを発火
+                ModifySpellLevelEvent levelEvent = new ModifySpellLevelEvent(spell, player, level, level);
+                MinecraftForge.EVENT_BUS.post(levelEvent);
+                int finalLevel = levelEvent.getLevel();
+
+                CompoundTag dataTag = new CompoundTag();
+                dataTag.putString("SpellID", spell.getSpellId());
+                dataTag.putInt("Level", finalLevel);
+                pendingList.add(dataTag);
+            }
+        }
+
+        if (!pendingList.isEmpty()) {
+            CompoundTag dataToPass = new CompoundTag();
+            dataToPass.put("Spells", pendingList);
+            pendingSpells.put(player.getUUID(), dataToPass);
+        }
     }
 
     @SubscribeEvent
@@ -122,7 +157,6 @@ public class MagicBulletEvents {
     public static void onEntityHurtPre(EntityHurtByGunEvent.Pre event) {
         if (!(event.getAttacker() instanceof Player player)) return;
         if (!(event.getHurtEntity() instanceof LivingEntity target)) return;
-        // getHitPos()を解決できないため、弾丸の現在位置を使用
         processImpact(player, target, event.getBullet().position(), event.getBullet());
     }
 
@@ -144,9 +178,7 @@ public class MagicBulletEvents {
         dummy.readAdditionalSaveData(tag);
 
         player.level().addFreshEntity(dummy);
-
         processImpact(player, dummy, hitPos, event.getAmmo());
-
         dummy.discard();
     }
 
@@ -155,10 +187,25 @@ public class MagicBulletEvents {
         if (!bullet.getPersistentData().contains("MagicData")) return;
         CompoundTag magicTag = bullet.getPersistentData().getCompound("MagicData");
 
-        AbstractSpell spell = SpellRegistry.getSpell(magicTag.getString("SpellID"));
-        int level = magicTag.getInt("Level");
-        if (spell == null || spell == SpellRegistry.none()) return;
+        net.minecraft.nbt.ListTag spellsList = magicTag.getList("Spells", 10);
+        if (spellsList.isEmpty()) {
+            AbstractSpell spell = SpellRegistry.getSpell(magicTag.getString("SpellID"));
+            int level = magicTag.getInt("Level");
+            if (spell == null || spell == SpellRegistry.none()) return;
+            processSingleSpell(spell, level, player, target, hitPos, bullet);
+        } else {
+            for (int i = 0; i < spellsList.size(); i++) {
+                CompoundTag spellTag = spellsList.getCompound(i);
+                AbstractSpell spell = SpellRegistry.getSpell(spellTag.getString("SpellID"));
+                int level = spellTag.getInt("Level");
+                if (spell != null && spell != SpellRegistry.none()) {
+                    processSingleSpell(spell, level, player, target, hitPos, bullet);
+                }
+            }
+        }
+    }
 
+    private static void processSingleSpell(AbstractSpell spell, int level, Player player, LivingEntity target, Vec3 hitPos, Entity bullet) {
         MagicData magicData = MagicData.getPlayerMagicData(player);
 
         if (spell.getSpellResource().getPath().contains("starfall")) {
@@ -180,7 +227,7 @@ public class MagicBulletEvents {
             float yaw = (float)(Math.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
             float pitch = (float)(-(Math.atan2(d1, d3) * (180D / Math.PI)));
 
-            double offsetDistance = 2.2;
+            double offsetDistance = 3.0;
             Vec3 pseudoSpawnPos = hitPos.subtract(bulletMotion.scale(offsetDistance));
 
             player.setPos(pseudoSpawnPos.x, pseudoSpawnPos.y, pseudoSpawnPos.z);
@@ -188,8 +235,6 @@ public class MagicBulletEvents {
             player.setXRot(pitch);
             player.setYHeadRot(yaw);
 
-            // setInitiatedCastSpellが解決できないため、initiateCast内で管理するか、
-            // バージョンに応じて直接詠唱開始をシミュレート
             if (spell.getCastType() == CastType.CONTINUOUS) {
                 int duration = spell.getCastTime(level);
                 if (duration <= 0) duration = 20;
@@ -237,7 +282,6 @@ public class MagicBulletEvents {
 
     private static void executeSpell(AbstractSpell spell, int level, Player player, MagicData magicData) {
         try {
-            // 第3引数(LivingEntity)にplayerを渡すことで、弾丸の主人が詠唱したことにする
             spell.onCast(player.level(), level, player, CastSource.SWORD, magicData);
         } catch (Exception e) {
             Tacz_magic_bullet.LOGGER.error("Failed to cast spell: " + spell.getSpellResource().toString(), e);

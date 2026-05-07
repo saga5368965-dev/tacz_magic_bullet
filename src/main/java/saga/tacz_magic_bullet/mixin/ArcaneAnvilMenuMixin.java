@@ -5,7 +5,7 @@ import io.redspace.ironsspellbooks.api.spells.ISpellContainer;
 import io.redspace.ironsspellbooks.api.spells.SpellData;
 import io.redspace.ironsspellbooks.gui.arcane_anvil.ArcaneAnvilMenu;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.Container;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.world.inventory.ItemCombinerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
@@ -14,11 +14,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import saga.tacz_magic_bullet.config.MagicBulletConfig;
 
 @Mixin(ArcaneAnvilMenu.class)
 public abstract class ArcaneAnvilMenuMixin extends ItemCombinerMenu {
 
-    public ArcaneAnvilMenuMixin(@Nullable MenuType<?> pType, int pContainerId, net.minecraft.world.entity.player.Inventory pPlayerInventory, net.minecraft.world.inventory.ContainerLevelAccess pAccess) {
+    public ArcaneAnvilMenuMixin(@Nullable MenuType<?> pType, int pContainerId,
+                                net.minecraft.world.entity.player.Inventory pPlayerInventory,
+                                net.minecraft.world.inventory.ContainerLevelAccess pAccess) {
         super(pType, pContainerId, pPlayerInventory, pAccess);
     }
 
@@ -27,27 +30,54 @@ public abstract class ArcaneAnvilMenuMixin extends ItemCombinerMenu {
         ItemStack baseStack = this.inputSlots.getItem(0);
         ItemStack modifierStack = this.inputSlots.getItem(1);
 
-        // 既に結果がある場合は何もしない（Irons標準の処理を優先）
         if (!this.resultSlots.getItem(0).isEmpty()) return;
 
-        // TACZの銃と、魔法入りのアイテム（スクロール等）の組み合わせかチェック
         if (baseStack.getItem() instanceof IGun && ISpellContainer.isSpellContainer(modifierStack)) {
-            var spellContainer = ISpellContainer.get(modifierStack);
+            ISpellContainer spellContainer = ISpellContainer.get(modifierStack);
+            
+            ItemStack result = baseStack.copy();
+            CompoundTag resultTag = result.getOrCreateTag();
+            ListTag existingSpells = resultTag.getList("InscribedSpells", 10);
             if (!spellContainer.isEmpty()) {
-                SpellData spellData = spellContainer.getSpellAtIndex(0);
+                for (int i = 0; i < 100; i++) {
+                    try {
+                        SpellData spellData = spellContainer.getSpellAtIndex(i);
+                        if (spellData == null || spellData.getSpell() == null) break;
+                        
+                        String spellId = spellData.getSpell().getSpellId();
+                        if (!spellId.isEmpty()) {
+                            boolean allowDuplicates = MagicBulletConfig.ALLOW_DUPLICATE_SPELLS != null && MagicBulletConfig.ALLOW_DUPLICATE_SPELLS.get();
+                            if (!allowDuplicates) {
+                                boolean duplicate = false;
+                                for (int j = 0; j < existingSpells.size(); j++) {
+                                    if (existingSpells.getCompound(j).getString("SpellID").equals(spellId)) {
+                                        duplicate = true;
+                                        break;
+                                    }
+                                }
+                                if (duplicate) continue;
+                            }
 
-                ItemStack result = baseStack.copy();
-                CompoundTag tag = result.getOrCreateTag();
-
-                CompoundTag spellTag = new CompoundTag();
-                spellTag.putString("SpellID", spellData.getSpell().getSpellId());
-                spellTag.putInt("Level", spellData.getLevel());
-
-                tag.put("InscribedSpell", spellTag);
-
-                // 結果スロット（index 2）にセット
-                this.resultSlots.setItem(0, result);
+                            CompoundTag spellTag = new CompoundTag();
+                            spellTag.putString("SpellID", spellId);
+                            spellTag.putInt("Level", spellData.getLevel());
+                            existingSpells.add(spellTag);
+                        }
+                    } catch (Exception e) {
+                        break;
+                    }
+                }
             }
+            int maxSpells = 6;
+            if (MagicBulletConfig.MAX_INSCRIBED_SPELLS != null) {
+                maxSpells = MagicBulletConfig.MAX_INSCRIBED_SPELLS.get();
+            }
+            while (existingSpells.size() > maxSpells) {
+                existingSpells.remove(0);
+            }
+
+            resultTag.put("InscribedSpells", existingSpells);
+            this.resultSlots.setItem(0, result);
         }
     }
 }

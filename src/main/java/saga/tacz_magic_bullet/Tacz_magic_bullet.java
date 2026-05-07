@@ -19,6 +19,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 import saga.tacz_magic_bullet.Event.MagicBulletEvents;
+import saga.tacz_magic_bullet.config.MagicBulletConfig;
 import saga.tacz_magic_bullet.network.PacketHandler;
 
 @Mod(Tacz_magic_bullet.MODID)
@@ -29,8 +30,6 @@ public class Tacz_magic_bullet {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
-
-    // レシピシリアライザーの登録
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
             DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, MODID);
 
@@ -44,6 +43,9 @@ public class Tacz_magic_bullet {
         MinecraftForge.EVENT_BUS.register(MagicBulletEvents.class);
         LOGGER.info("Registered MagicBulletEvents to Forge event bus");
         modEventBus.addListener(this::addCreative);
+        
+        // コンフィグの登録
+        MagicBulletConfig.register();
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
